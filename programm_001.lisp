@@ -1,6 +1,15 @@
 ;; Данная программа представляет собой реализацию простейшего целочисленного калькулятора.
 
 
+(defun take-while (pred seq)
+  "Вспомогательная функция которая нам потребуется при
+   конвертации в постфиксную запись"
+  (if (null seq)
+      '()
+      (when (funcall pred (first seq))
+        (cons (first seq)
+              (take-while pred (rest seq))))))
+
 ;; Начнем с описания допустимых операторов в нашем калькуляторе. К ним мы относим базовые
 ;; арифметические операции, плюс квадратные скобки, которые меняют приоритет.
 (defun operatorp (token) (member token '(+ - * / [ ])))
@@ -16,15 +25,10 @@
     ((eq token '*) 3)
     ((eq token '/) 3)))
 
-(defun take-while (pred seq)
-  (if (null seq)
-      '()
-      (when (funcall pred (first seq))
-        (cons (first seq)
-              (take-while pred (rest seq))))))
-
+;; Прежде чем вычислять выражение нам необходимо привести его из инфиксной формы в
+;; постфиксную. Для этого воспользуемся алгоритмом Дейкстры.
+;; https://ru.wikipedia.org/wiki/Обратная_польская_запись
 (defun to-postfix (expr &optional (stack '()) (result '()))
-  "Преобразует выражение из инфиксной в постфиксную запись"
   (let ((token (first expr)))
     (if token
       (cond
@@ -49,6 +53,11 @@
             (cons token (subseq stack (length pop-op)))
             (append result pop-op)))))
       (append result stack))))
+
+;; Уже на данном этапе можно насладиться плодами и перевести выражение из инфиксной
+;; формы в постфиксную:
+;; (to-postfix '([ 1 + 2 ] * 4 + 3)) => '(1 2 + 4 * 3 +)
+;; (to-postfix '(3 + [ 10 - 15 ])) => '(3 10 15 - +)
 
 (defun calculate (expr)
   "Вычисляет результат выражения,
