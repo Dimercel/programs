@@ -7,8 +7,9 @@ import System.Random
 
 type Point = (Int, Int)
 
-randomPoints :: Int -> [Point]
-randomPoints size = let g      = mkStdGen 100
-                        first  = take size (randoms g :: [Int])
-                        second = take size (randoms g :: [Int])
-                        in zip first second
+randomPoints :: Int -> Int -> StdGen -> [Point]
+randomPoints 0 _ _ = []
+randomPoints size max gen =
+  let (first, newGen)   = randomR (0, max) gen
+      (second, nextGen) = randomR (0, max) newGen
+  in (first, second) : randomPoints (size - 1) max nextGen
