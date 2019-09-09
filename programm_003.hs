@@ -7,6 +7,9 @@ import System.Random
 
 type Point = (Int, Int)
 
+
+seed = 42 :: Int
+
 randomPoints :: Int -> Int -> StdGen -> [Point]
 randomPoints 0 _ _ = []
 randomPoints size max gen =
