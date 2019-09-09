@@ -1,7 +1,7 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-14.4 script
 
-import Data.List
+import Data.List (filter)
 import System.Random
 
 
@@ -12,24 +12,28 @@ seed = 42 :: Int
 
 randomPoints :: Int -> Int -> StdGen -> [Point]
 randomPoints 0 _ _ = []
-randomPoints size max gen =
+randomPoints count max gen =
   let (first, newGen)   = randomR (0, max) gen
       (second, nextGen) = randomR (0, max) newGen
-  in (first, second) : randomPoints (size - 1) max nextGen
+  in (first, second) : randomPoints (count - 1) max nextGen
 
-createLimits :: [Point] -> [Point]
-createLimits [] = []
-createLimits points =
-  let maxX = maximum $ map fst points
-      maxY = maximum $ map snd points
-      minX = minimum $ map fst points
-      minY = minimum $ map snd points
-      hLimit from to y = [(x, y) | x <- [from .. to]]
-      vLimit from to x = [(x, y) | y <- [from .. to]]
+createLimits :: Int -> Int -> [Point]
+createLimits 0 _ = []
+createLimits _ 0 = []
+createLimits rowCount colCount =
+  let hLimit from to row = [(row, col) | col <- [from .. to]]
+      vLimit from to col = [(row, col) | row <- [from .. to]]
   in concat [
-    hLimit (minX - 1) (maxX + 1) (minY - 1),
-    hLimit (minX - 1) (maxX + 1) (maxY + 1),
-    vLimit minY maxY (minX - 1),
-    vLimit minY maxY (maxX + 1),
-    points]
+    hLimit (-1) colCount (-1),
+    hLimit (-1) colCount rowCount,
+    vLimit 0 (rowCount - 1) (-1),
+    vLimit 0 (rowCount - 1) colCount
+    ]
 
+makeScene :: Int -> [Point]
+makeScene size = createLimits size size ++ randomPoints size (size - 1) (mkStdGen seed)
+
+sceneSize :: [Point] -> (Int, Int)
+sceneSize points
+  | length points <= 9 = (0, 0)
+  | otherwise = (maximum (map fst points), maximum (map snd points))
