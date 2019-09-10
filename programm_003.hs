@@ -2,6 +2,7 @@
 -- stack --resolver lts-14.4 script
 
 import Data.List (filter)
+import Data.Set (fromList, member)
 import System.Random
 
 
@@ -9,6 +10,7 @@ type Point = (Int, Int)
 
 
 seed = 42 :: Int
+minSpaceCount = 9 :: Int
 
 randomPoints :: Int -> Int -> StdGen -> [Point]
 randomPoints 0 _ _ = []
@@ -31,9 +33,24 @@ createLimits rowCount colCount =
     ]
 
 makeScene :: Int -> [Point]
-makeScene size = createLimits size size ++ randomPoints size (size - 1) (mkStdGen seed)
+makeScene size
+  | size > 1 = createLimits size size ++ randomPoints size (size - 1) (mkStdGen seed)
+  | otherwise = makeScene 2
 
-sceneSize :: [Point] -> (Int, Int)
-sceneSize points
-  | length points <= 9 = (0, 0)
-  | otherwise = (maximum (map fst points), maximum (map snd points))
+sceneSize :: [Point] -> Int
+sceneSize points = maximum (map fst points)
+
+freeSpaces :: [Point] -> [Point]
+freeSpaces scene =
+  let size = sceneSize scene
+      spaces = [(row, col) | row <- [0 .. size - 1], col <- [0 .. size - 1]]
+      pointsSet = fromList scene
+  in foldr (\x acc -> if member x pointsSet then acc else x : acc) [] spaces
+
+-- Теперь нам нужно определиться с начальной и конечной точкой пути. Их мы также генерируем случайно,
+-- на свободных местах в сцене.
+endPoints :: [Point] -> (Point, Point)
+endPoints scene =
+  let spaces = freeSpaces scene
+      [(startInx, finishInx)] = randomPoints 1 (length spaces - 1) (mkStdGen seed)
+  in ((!!) spaces startInx, (!!) spaces finishInx)
