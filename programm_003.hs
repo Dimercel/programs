@@ -1,7 +1,7 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-14.4 script
 
-import Data.List (filter)
+import Data.List
 import Data.Set (fromList, member)
 import System.Random
 
@@ -10,7 +10,6 @@ type Point = (Int, Int)
 
 
 seed = 42 :: Int
-minSpaceCount = 9 :: Int
 
 randomPoints :: Int -> Int -> StdGen -> [Point]
 randomPoints 0 _ _ = []
@@ -47,7 +46,7 @@ freeSpaces scene =
       pointsSet = fromList scene
   in foldr (\x acc -> if member x pointsSet then acc else x : acc) [] spaces
 
--- Теперь нам нужно определиться с начальной и конечной точкой пути. Их мы также генерируем случайно,
+-- Теперь нам нужно определиться с начальной и конечной точками пути. Их мы также генерируем случайно,
 -- на свободных местах в сцене.
 endPoints :: [Point] -> (Point, Point)
 endPoints scene =
