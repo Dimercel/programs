@@ -6,10 +6,13 @@ import Data.List
 import Data.Set (fromList, member)
 import System.Random
 
+
 type Point = (Int, Int)
 
 
 seed = 42 :: Int
+
+
 
 -- СЦЕНА.
 --
@@ -81,3 +84,17 @@ endPoints scene =
   let spaces = freeSpaces scene
       [(startInx, finishInx)] = randomPoints 1 (length spaces - 1) (mkStdGen seed)
   in ((!!) spaces startInx, (!!) spaces finishInx)
+
+
+
+-- ВОЛНОВОЙ АЛГОРИТМ ЛИ.
+--
+-- Приступим собственно к описанию самого алгоритма.
+
+neighbors :: Point -> [Point]
+neighbors (row, col) = [
+  (row - 1, col),
+  (row + 1, col),
+  (row, col - 1),
+  (row, col + 1)
+  ]
