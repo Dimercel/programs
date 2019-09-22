@@ -78,7 +78,7 @@ freeSpaces scene =
   in foldr (\x acc -> if member x pointsSet then acc else x : acc) [] spaces
 
 --   Наша сцена полностью готова, но нам также необходимо знать на каких местах находятся начальное
--- и конечное положения пути. Их мы также выберем случайным образом на свободных местах сцены.
+-- и конечное положения пути. Их мы также выберем случайным образом, из числа свободных мест сцены.
 endPoints :: [Point] -> (Point, Point)
 endPoints scene =
   let spaces = freeSpaces scene
