@@ -3,7 +3,7 @@
 
 -- Реализация волнового алгоритма Ли (https://en.wikipedia.org/wiki/Lee_algorithm)
 import Data.List
-import Data.Set (fromList, member)
+import qualified Data.Set as S
 import System.Random
 
 
@@ -34,24 +34,24 @@ seed = 42 :: Int
 -- препятствия. Стоит отметить что здесь возможны случаи получения замкнутых областей. Таким образом
 -- может получиться что путь построить невозможно, если к примеру, начальное место находится внутри
 -- такой области, а конечное снаружи.
-randomPoints :: Int -> Int -> StdGen -> [Point]
-randomPoints 0 _ _ = []
+randomPoints :: Int -> Int -> StdGen -> S.Set Point
+randomPoints 0 _ _ = S.fromList []
 randomPoints count max gen =
   let (first, newGen)   = randomR (0, max) gen
       (second, nextGen) = randomR (0, max) newGen
-  in (first, second) : randomPoints (count - 1) max nextGen
+  in S.insert (first, second) (randomPoints (count - 1) max nextGen)
 
 --   Далее мы построим ограждение из препятствий вокруг нашей сцены, с целью немного облегчить
 -- алгоритм. Так как сцена имеет квадратную форму, сделать это будет относительно просто. Нам
 -- понадобится два горизонтальных ряда и два вертикальных, в сумме образующих квадрат размера
 -- на единицу больше чем сама сцена. Внутри него и будет заключена сцена.
-createLimits :: Int -> Int -> [Point]
-createLimits 0 _ = []
-createLimits _ 0 = []
+createLimits :: Int -> Int -> S.Set Point
+createLimits 0 _ = S.fromList []
+createLimits _ 0 = S.fromList []
 createLimits rowCount colCount =
   let hLimit from to row = [(row, col) | col <- [from .. to]]
       vLimit from to col = [(row, col) | row <- [from .. to]]
-  in concat [
+  in S.fromList $ concat [
     hLimit (-1) colCount (-1),
     hLimit (-1) colCount rowCount,
     vLimit 0 (rowCount - 1) (-1),
@@ -61,36 +61,43 @@ createLimits rowCount colCount =
 --   Наконец-то мы дошли до построения самой сцены, теперь это выглядит вполне тривиальным
 -- действием. Мы просто случайным образом генерируем препятствия внутри сцены указанного размера
 -- и строим ограждение из препятствий вокруг нее.
-makeScene :: Int -> [Point]
+makeScene :: Int -> S.Set Point
 makeScene size
-  | size > 1 = createLimits size size ++ randomPoints size (size - 1) (mkStdGen seed)
+  | size > 1 = S.union (createLimits size size) (randomPoints size (size - 1) (mkStdGen seed))
   | otherwise = makeScene 2
 
-sceneSize :: [Point] -> Int
-sceneSize points = maximum (map fst points)
+sceneSize :: S.Set Point -> Int
+sceneSize points = maximum $ S.toList (S.map fst points)
 
 -- Нам пригодится знать какие места в сцене еще не заняты.
-freeSpaces :: [Point] -> [Point]
+freeSpaces :: S.Set Point -> [Point]
 freeSpaces scene =
   let size = sceneSize scene
       spaces = [(row, col) | row <- [0 .. size - 1], col <- [0 .. size - 1]]
-      pointsSet = fromList scene
-  in foldr (\x acc -> if member x pointsSet then acc else x : acc) [] spaces
+  in foldr (\x acc -> if S.member x scene then acc else x : acc) [] spaces
 
 --   Наша сцена полностью готова, но нам также необходимо знать на каких местах находятся начальное
 -- и конечное положения пути. Их мы также выберем случайным образом, из числа свободных мест сцены.
-endPoints :: [Point] -> (Point, Point)
+endPoints :: S.Set Point -> (Point, Point)
 endPoints scene =
   let spaces = freeSpaces scene
-      [(startInx, finishInx)] = randomPoints 1 (length spaces - 1) (mkStdGen seed)
+      [(startInx, finishInx)] = S.toList $ randomPoints 1 (length spaces - 1) (mkStdGen seed)
   in ((!!) spaces startInx, (!!) spaces finishInx)
 
 
 
 -- ВОЛНОВОЙ АЛГОРИТМ ЛИ.
 --
--- Приступим собственно к описанию самого алгоритма.
+--   Приступим собственно к описанию самого алгоритма. На первом этапе мы должны сгенерировать "волну"
+-- из начального места выбрав при этом все соседние клетки начального места. "Волна" представляет собой
+-- множество соседних мест с предыдущей "волной", отмеченных уровнем. То есть, например для соседних со
+-- стартовым местом, уровень будет равен единице, для соседних с уровнем 1, уже будет уровень 2 и т.д.
+--   Алгоритм заканчивается, если более пустых мест не осталось или в очередной волне попалось конечное
+-- положение.
 
+-- Интересно что соседние клетки можно определить по разному и алгоритм будет по прежнему работать для
+-- различных реализаций. В нашем случае все очень просто и соседними клетками являются те клетки, что
+-- образуют знак "плюс" с указанным местом. Оно конечно находится в центре.
 neighbors :: Point -> [Point]
 neighbors (row, col) = [
   (row - 1, col),
