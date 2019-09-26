@@ -31,15 +31,15 @@ seed = 42 :: Int
 -- поэтапную реализацию построения сцены.
 
 --   Для начала нам потребуется сгенерировать несколько координат мест, где будут размещены
--- препятствия. Стоит отметить что здесь возможны случаи получения замкнутых областей. Таким образом
+-- препятствия. Стоит отметить, что здесь возможны случаи получения замкнутых областей. Таким образом,
 -- может получиться что путь построить невозможно, если к примеру, начальное место находится внутри
 -- такой области, а конечное снаружи.
 randomPoints :: Int -> Int -> StdGen -> S.Set Point
-randomPoints 0 _ _ = S.fromList []
-randomPoints count max gen =
-  let (first, newGen)   = randomR (0, max) gen
-      (second, nextGen) = randomR (0, max) newGen
-  in S.insert (first, second) (randomPoints (count - 1) max nextGen)
+randomPoints count max gen
+  | count > 0 && max > 0 =
+    let (gen1, gen2) = split gen
+    in S.fromList $ zip (take count (randomRs (0, max) gen1)) (take count (randomRs (0, max) gen2))
+  | otherwise = S.fromList []
 
 --   Далее мы построим ограждение из препятствий вокруг нашей сцены, с целью немного облегчить
 -- алгоритм. Так как сцена имеет квадратную форму, сделать это будет относительно просто. Нам
@@ -98,8 +98,8 @@ endPoints scene =
 -- Интересно что соседние клетки можно определить по разному и алгоритм будет по прежнему работать для
 -- различных реализаций. В нашем случае все очень просто и соседними клетками являются те клетки, что
 -- образуют знак "плюс" с указанным местом. Оно конечно находится в центре.
-neighbors :: Point -> [Point]
-neighbors (row, col) = [
+neighbors :: Point -> S.Set Point
+neighbors (row, col) = S.fromList [
   (row - 1, col),
   (row + 1, col),
   (row, col - 1),
