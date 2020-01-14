@@ -5,21 +5,31 @@
 Комбинаторные алгоритмы", стр. 338.
 """
 
+class GrayCode:
 
-def gray_code(code, focus):
-    print("".join(map(str, list(reversed(code)))))
+    def __init__(self, size):
+        self.__size = size
 
-    j = focus[0]
-    focus[0] = 0
+    def __iter__(self):
+        j = 0
+        code = [0] * self.__size
+        focus = [x for x in range(self.__size + 1)]
+        while j != self.__size:
+            yield tuple(reversed(code))
 
-    if j == len(code):
-        return
-    else:
-        focus[j] = focus[j + 1]
-        focus[j + 1] = j + 1
+            j = focus[0]
+            focus[0] = 0
 
-    code[j] = 1 - code[j]
-    gray_code(code, focus)
+            if j == self.__size:
+                break
+            else:
+                focus[j] = focus[j + 1]
+                focus[j + 1] = j + 1
+
+            code[j] = 1 - code[j]
+
 
 size = int(input('Укажите размер кортежа: '))
-gray_code([0] * size, [x for x in range(size + 1)])
+
+for code in GrayCode(size):
+    print("".join(map(str, code)))
